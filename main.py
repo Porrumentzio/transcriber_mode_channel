@@ -1,6 +1,9 @@
 import xml.etree.ElementTree as ET
 import os
 import argparse
+import xml.etree.ElementTree as ET
+import os
+import argparse
 import pandas as pd
 
 
@@ -19,53 +22,72 @@ def get_name(name_file):
 
 
 def get_doctype_line(xml_path):
-    with open(xml_path, 'r', encoding='utf-8') as f:
+    with open(xml_path, "r", encoding="utf-8") as f:
         for line in f:
-            if line.strip().startswith('<!DOCTYPE'):
+            if line.strip().startswith("<!DOCTYPE"):
                 return line.strip()
     return None
 
 
 def insert_doctype(xml_file, doctype_line):
-    with open(xml_file, 'r', encoding='utf-8') as f:
+    with open(xml_file, "r", encoding="utf-8") as f:
         lines = f.readlines()
     for i, line in enumerate(lines):
-        if line.strip().startswith('<?xml'):
+        if line.strip().startswith("<?xml"):
             insert_index = i + 1
             break
     else:
         insert_index = 0
     lines.insert(insert_index, doctype_line + "\n")
-    with open(xml_file, 'w', encoding='utf-8') as f:
+    with open(xml_file, "w", encoding="utf-8") as f:
         f.writelines(lines)
-    print(f'DOCTYPE line inserted: {doctype_line}')
+    print(f"DOCTYPE line inserted: {doctype_line}")
 
 
 def load_speaker_mode_channel_map(csv_path):
-    df = pd.read_csv(csv_path, delimiter=';')
+    df = pd.read_csv(csv_path, delimiter=";")
     mapping = {}
     ignored = set()
 
     # Map speakers to mode/channel per column
     for col, (mode, channel) in {
-        'spontaneous_studio': ('spontaneous', 'studio'),
-        'spontaneous_telephone': ('spontaneous', 'telephone'),
-        'planned_studio': ('planned', 'studio'),
+        "spontaneous_studio": ("spontaneous", "studio"),
+        "spontaneous_telephone": ("spontaneous", "telephone"),
+        "planned_studio": ("planned", "studio"),
     }.items():
         for spks in df[col].dropna():
-            for spk in str(spks).split(';'):
+            for spk in str(spks).split(";"):
                 spk = spk.strip()
                 if spk:
                     mapping[spk] = (mode, channel)
-    
+
     # Load ignored speakers
-    for spks in df['ignore'].dropna():
-        for spk in str(spks).split(';'):
+    for spks in df["ignore"].dropna():
+        for spk in str(spks).split(";"):
             spk = spk.strip()
             if spk:
                 ignored.add(spk)
 
     return mapping, ignored
+
+
+def write_xml_with_formatting(tree, file_path):
+    # Write xml declaration line manually with double quotes and uppercase UTF-8
+    declaration = '<?xml version="1.0" encoding="UTF-8"?>\n'
+
+    # Serialize XML tree to string
+    xml_bytes = ET.tostring(tree.getroot(), encoding="utf-8", method="xml")
+    xml_str = xml_bytes.decode("utf-8")
+
+    # Remove spaces before self-closing tags "/>"
+    xml_str = xml_str.replace(" />", "/>")
+
+    # Write to file with manual declaration line
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(declaration)
+        f.write(xml_str)
+
+    print(f"File saved with cleaned XML formatting: {file_path}")
 
 
 def change_mode_channel(xml_path, csv_path):
@@ -74,8 +96,8 @@ def change_mode_channel(xml_path, csv_path):
     mapping, ignored = load_speaker_mode_channel_map(csv_path)
     changes = 0
 
-    for turn in root.findall('.//Turn'):
-        spk = turn.get('speaker')
+    for turn in root.findall(".//Turn"):
+        spk = turn.get("speaker")
         if not spk:
             continue
 
@@ -87,16 +109,16 @@ def change_mode_channel(xml_path, csv_path):
             if spk_id in mapping:
                 mode, channel = mapping[spk_id]
                 # Set mode if missing
-                if 'mode' not in turn.attrib:
-                    turn.set('mode', mode)
+                if "mode" not in turn.attrib:
+                    turn.set("mode", mode)
                 # Set channel if missing
-                if 'channel' not in turn.attrib:
-                    turn.set('channel', channel)
+                if "channel" not in turn.attrib:
+                    turn.set("channel", channel)
                 print(f"Updated speaker={spk_id}, mode={turn.get('mode')}, channel={turn.get('channel')}")
                 changes += 1
 
     new_file = get_name(xml_path)
-    tree.write(new_file, encoding='utf-8', xml_declaration=True)
+    write_xml_with_formatting(tree, new_file)
 
     doctype_line = get_doctype_line(xml_path)
     if doctype_line:
@@ -109,6 +131,5 @@ def main():
     change_mode_channel(args.xml_path, args.csv_path)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
-
