@@ -1,4 +1,8 @@
 # transcriber_mode_channel
+## Prerequisites
+- Install Python
+- Download the code (Main page > Code > Download ZIP
+
 ## How to use
 1. Enter the TRS file into the folder 'data'
 2. Edit the CSV so each speaker ID (spk2, spk3) is in their column
