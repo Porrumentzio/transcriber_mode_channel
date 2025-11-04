@@ -2,11 +2,11 @@
 ## Prerequisites
 - Install Python
 - Install module 'pandas' (`pip install pandas`)
-- Download the code (Main page > Code > Download ZIP
+- Download the code (Main page > Code > Download ZIP)
 
 ## How to use
 1. Enter the TRS file into the folder 'data'
-2. Edit the CSV so each speaker ID (spk2, spk3) is in their column
+2. Edit the CSV in _data_ so each speaker ID (spk2, spk3) is in their column
 3. Execute main.py:
 
 >Windows:  
