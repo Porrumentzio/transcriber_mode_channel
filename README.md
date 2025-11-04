@@ -1,6 +1,7 @@
 # transcriber_mode_channel
 ## Prerequisites
 - Install Python
+- Install module 'pandas' (`pip install pandas`)
 - Download the code (Main page > Code > Download ZIP
 
 ## How to use
