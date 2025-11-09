@@ -17,7 +17,6 @@ def argument_parsers():
 def get_name(name_file):
     base, ext = os.path.splitext(name_file)
     new_file = base + "_corrected" + ext
-    print(f"New file will be saved as: {new_file}")
     return new_file
 
 
@@ -41,8 +40,6 @@ def insert_doctype(xml_file, doctype_line):
     lines.insert(insert_index, doctype_line + "\n")
     with open(xml_file, "w", encoding="utf-8") as f:
         f.writelines(lines)
-    print(f"DOCTYPE line inserted: {doctype_line}")
-
 
 def load_speaker_mode_channel_map(csv_path):
     df = pd.read_csv(csv_path, delimiter=";")
@@ -87,35 +84,52 @@ def write_xml_with_formatting(tree, file_path):
         f.write(declaration)
         f.write(xml_str)
 
-    print(f"File saved with cleaned XML formatting: {file_path}")
+    print(f"\nFile saved with cleaned XML formatting: {file_path}")
 
 
 def change_mode_channel(xml_path, csv_path):
     tree = ET.parse(xml_path)
     root = tree.getroot()
     mapping, ignored = load_speaker_mode_channel_map(csv_path)
-    changes = 0
+
+    # Dictionary to group changes by attribute
+    changed_attributes = {
+        'mode': [],
+        'channel': [],
+    }
 
     for turn in root.findall(".//Turn"):
         spk = turn.get("speaker")
         if not spk:
             continue
 
-        # Process each speaker id (in case multiple present)
         for spk_id in spk.split():
             if spk_id in ignored:
-                # Skip ignored speakers
                 continue
             if spk_id in mapping:
                 mode, channel = mapping[spk_id]
-                # Set mode if missing
+
+                # Conditionally add mode attribute
                 if "mode" not in turn.attrib:
                     turn.set("mode", mode)
-                # Set channel if missing
+                    changed_attributes['mode'].append(f"Speaker {spk_id} - added mode='{mode}'")
+
+                # Conditionally add channel attribute
                 if "channel" not in turn.attrib:
                     turn.set("channel", channel)
-                print(f"Updated speaker={spk_id}, mode={turn.get('mode')}, channel={turn.get('channel')}")
-                changes += 1
+                    changed_attributes['channel'].append(f"Speaker {spk_id} - added channel='{channel}'")
+
+    # Print grouped logs by attribute category
+    for attr, changes_list in changed_attributes.items():
+        if changes_list:
+            print(f"\nChanged {attr}s:")
+            for entry in changes_list:
+                print(f"    {entry}")
+        else:
+            print(f"\nNo {attr}s changed.")
+
+    print(f"\nTotal mode attributes modified: {len(changed_attributes['mode'])}")
+    print(f"Total channel attributes modified: {len(changed_attributes['channel'])}")
 
     new_file = get_name(xml_path)
     write_xml_with_formatting(tree, new_file)
@@ -123,7 +137,6 @@ def change_mode_channel(xml_path, csv_path):
     doctype_line = get_doctype_line(xml_path)
     if doctype_line:
         insert_doctype(new_file, doctype_line)
-    print(f"Total Turns updated by CSV (missing attributes added): {changes}")
 
 
 def main():
